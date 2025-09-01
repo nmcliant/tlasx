@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block title %}Products - Flask Shop{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">商品一覧</h1>
+<div class="row">
+  {% for p in products %}
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <img src="{{ p.image_url }}" class="card-img-top" alt="{{ p.name }}">
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title">{{ p.name }}</h5>
+        <p class="card-text fs-5">{{ (p.price_cents // 100) | int }} 円</p>
+        <form class="mt-auto d-flex gap-2" action="{{ url_for('add_to_cart', pid=p.id) }}" method="post">
+          <input class="form-control" type="number" name="qty" value="1" min="1" style="max-width:120px">
+          <button class="btn btn-primary" type="submit">カートに入れる</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
