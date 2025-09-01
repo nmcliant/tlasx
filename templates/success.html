@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block title %}Success - Flask Shop{% endblock %}
+{% block content %}
+  <div class="alert alert-success">
+    <h4 class="alert-heading">決済が完了しました。</h4>
+    <p>ご購入ありがとうございました。</p>
+    {% if session_id %}
+      <hr><div class="small text-muted">Session ID: {{ session_id }}</div>
+    {% endif %}
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('products') }}">商品へ戻る</a>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block title %}Canceled - Flask Shop{% endblock %}
+{% block content %}
+  <div class="alert alert-warning">
+    <h4 class="alert-heading">決済をキャンセルしました。</h4>
+    <p>カート内容は維持されています。必要なら再度チェックアウトしてください。</p>
+  </div>
+  <a class="btn btn-secondary" href="{{ url_for('cart_view') }}">カートへ戻る</a>
+{% endblock %}
