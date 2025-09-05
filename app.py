@@ -1,12 +1,15 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
 import os
-from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import stripe
+from pathlib import Path
+from dotenv import load_dotenv
 
-load_dotenv()
+# ここを変える
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "change-me"  # 本番は環境変数で注入してね
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "change-me")
 
 # --- Stripe セットアップ ---
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
@@ -17,9 +20,9 @@ stripe.api_key = STRIPE_SECRET_KEY
 
 # 仮の商品データ（あとでDBに差し替え可）
 PRODUCTS = [
-    {"id": 1, "name": "T-Shirt", "price_cents": 2500, "image_url": "https://via.placeholder.com/300x200?text=T-Shirt"},
-    {"id": 2, "name": "Mug",    "price_cents": 1200, "image_url": "https://via.placeholder.com/300x200?text=Mug"},
-    {"id": 3, "name": "Cap",    "price_cents": 1800, "image_url": "https://via.placeholder.com/300x200?text=Cap"},
+    {"id": 1, "name": "T-Shirt", "price_cents": 2500, "image_url": "https://via.placeholder.com/300x200?text=T-Shirt", "stripe_price_id": None},
+    {"id": 2, "name": "Mug",    "price_cents": 1200, "image_url": "https://via.placeholder.com/300x200?text=Mug",    "stripe_price_id": None},
+    {"id": 3, "name": "Cap",    "price_cents": 1800, "image_url": "https://via.placeholder.com/300x200?text=Cap",    "stripe_price_id": None},
 ]
 
 def get_product(pid: int):
@@ -66,7 +69,7 @@ def cart_view():
     for pid in ids:
         p = get_product(pid)
         if not p:
-            continue  # 商品が消えていたら無視
+            continue
         qty = int(c[str(pid)])
         subtotal = p["price_cents"] * qty
         total += subtotal
@@ -75,7 +78,6 @@ def cart_view():
 
 @app.post("/cart/update/<int:pid>")
 def cart_update(pid):
-    """数量更新（0 なら削除）。"""
     qty = max(0, int(request.form.get("qty", 1)))
     c = cart_dict()
     key = str(pid)
@@ -92,14 +94,17 @@ def cart_clear():
     session.modified = True
     return redirect(url_for("cart_view"))
 
+# --- ここから Stripe Checkout 本実装 ---
+
 @app.post("/checkout")
 def checkout():
+    """セッション内カートから Stripe Checkout セッションを作成してリダイレクト。"""
     c = cart_dict()
     if not c:
         flash("カートが空です。")
         return redirect(url_for("cart_view"))
 
- # line_items を構築
+    # line_items を構築
     ids = [int(k) for k in c.keys()]
     products = [get_product(pid) for pid in ids if get_product(pid)]
     line_items = []
@@ -172,6 +177,6 @@ def webhook():
         # 注意：セッションのカートはブラウザごとなので、Webhook側では触れない（サーバ側でDBに保存して結びつけるのが正道）
 
     return jsonify({"status": "ok"})
-
+    
 if __name__ == "__main__":
-    app.run(debug=False, port=5000)
+    app.run(debug=True, port=5000, use_reloader=False)
